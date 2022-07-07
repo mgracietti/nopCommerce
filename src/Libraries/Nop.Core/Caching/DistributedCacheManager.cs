@@ -16,7 +16,7 @@ namespace Nop.Core.Caching
     /// <summary>
     /// Represents a distributed cache 
     /// </summary>
-    public partial class DistributedCacheManager: CacheKeyService, ILocker, IStaticCacheManager
+    public partial class DistributedCacheManager : CacheKeyService, ILocker, IStaticCacheManager
     {
         #region Fields
 
@@ -35,7 +35,7 @@ namespace Nop.Core.Caching
             _keys = new List<string>();
         }
 
-        public DistributedCacheManager(AppSettings appSettings, IDistributedCache distributedCache, IHttpContextAccessor httpContextAccessor) :base(appSettings)
+        public DistributedCacheManager(AppSettings appSettings, IDistributedCache distributedCache, IHttpContextAccessor httpContextAccessor) : base(appSettings)
         {
             _distributedCache = distributedCache;
             _perRequestCache = new PerRequestCache(httpContextAccessor);
@@ -57,7 +57,7 @@ namespace Nop.Core.Caching
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(key.CacheTime)
             };
-            
+
             return options;
         }
 
@@ -74,7 +74,7 @@ namespace Nop.Core.Caching
         {
             var json = await _distributedCache.GetStringAsync(key.Key);
 
-            if (string.IsNullOrEmpty(json)) 
+            if (string.IsNullOrEmpty(json))
                 return (false, default);
 
             var item = JsonConvert.DeserializeObject<T>(json);
@@ -277,7 +277,7 @@ namespace Nop.Core.Caching
             _perRequestCache.RemoveByPrefix(prefix);
 
             using var _ = await _locker.LockAsync();
-            
+
             foreach (var key in _keys.Where(key => key.StartsWith(prefix, StringComparison.InvariantCultureIgnoreCase)).ToList())
             {
                 await _distributedCache.RemoveAsync(key);
@@ -298,7 +298,7 @@ namespace Nop.Core.Caching
 
             using var _ = await _locker.LockAsync();
 
-            foreach (var key in _keys) 
+            foreach (var key in _keys)
                 await _distributedCache.RemoveAsync(key);
 
             _keys.Clear();
@@ -345,16 +345,15 @@ namespace Nop.Core.Caching
         /// <returns>True if lock was acquired and action was performed; otherwise false</returns>
         public async Task<bool> PerformActionWithLockAsync(string resource, TimeSpan expirationTime, Func<Task> action)
         {
-            var key = new CacheKey(resource) { CacheTime = (int)expirationTime.TotalMinutes  };
-
-            //ensure that lock is acquired
-            var (isSet, _) = await TryGetItemAsync<object>(key);
-            if (isSet)
+            if (!string.IsNullOrEmpty(await _distributedCache.GetStringAsync(resource)))
                 return false;
 
             try
             {
-                await SetAsync(key, true);
+                await _distributedCache.SetStringAsync(resource, resource, new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = expirationTime
+                });
 
                 //perform action
                 await action();
@@ -364,7 +363,7 @@ namespace Nop.Core.Caching
             finally
             {
                 //release lock even if action fails
-                await RemoveAsync(key);
+                await _distributedCache.RemoveAsync(resource);
             }
         }
 
@@ -510,9 +509,9 @@ namespace Nop.Core.Caching
                         return;
 
                     using (new ReaderWriteLockDisposable(_lockSlim))
-                    //remove matching values
-                    foreach (var key in matchesKeys) 
-                        items.Remove(key);
+                        //remove matching values
+                        foreach (var key in matchesKeys)
+                            items.Remove(key);
                 }
             }
 

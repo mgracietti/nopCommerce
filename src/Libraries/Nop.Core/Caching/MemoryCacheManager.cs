@@ -231,15 +231,23 @@ namespace Nop.Core.Caching
         /// <returns>True if lock was acquired and action was performed; otherwise false</returns>
         public async Task<bool> PerformActionWithLockAsync(string resource, TimeSpan expirationTime, Func<Task> action)
         {
-            var key = new CacheKey(resource) { CacheTime = (int)expirationTime.TotalMinutes  };
-
             //ensure that lock is acquired
-            if (_memoryCache.TryGetValue(key.Key, out _))
+            var isSet = await _memoryCache.GetOrCreateAsync(resource, cacheEntry =>
+                {
+                    cacheEntry.AbsoluteExpiration = DateTimeOffset.Now;
+                    return Task.FromResult(false);
+                });
+
+            if (isSet)
                 return false;
 
             try
             {
-                await SetAsync(key, true);
+                await _memoryCache.GetOrCreateAsync(resource, cacheEntry =>
+                {
+                    cacheEntry.AbsoluteExpirationRelativeToNow = expirationTime;
+                    return Task.FromResult(true);
+                });
 
                 //perform action
                 await action();
@@ -249,7 +257,7 @@ namespace Nop.Core.Caching
             finally
             {
                 //release lock even if action fails
-                await RemoveAsync(key);
+                _memoryCache.Remove(resource);
             }
         }
 
