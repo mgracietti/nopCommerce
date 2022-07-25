@@ -271,7 +271,11 @@ namespace Nop.Web.Framework.Migrations.UpgradeTo460
                 ["Admin.Promotions.Discounts.List.IsActive.All"] = "All",
                 ["Admin.Promotions.Discounts.List.IsActive.Hint"] = "Search by \"IsActive\" property.",
                 ["Admin.Promotions.Discounts.List.IsActive.InactiveOnly"] = "Inactive only",
-                
+
+                ["Admin.Configuration.Stores.Fields.SslEnabled"] = "SSL",
+                ["Admin.Configuration.Stores.Fields.SslEnabled.Hint"] = "SSL (Secure Socket Layer) is the standard security technology for establishing an encrypted connection between a web server and the browser. This ensures that all data exchanged between web server and browser arrives unchanged.",
+                ["Admin.Configuration.Stores.Ssl.Enable"] = "Enable SSL",
+                ["Admin.Configuration.Stores.Ssl.Disable"] = "Disable SSL",
             }, languageId).Wait();
 
             #endregion

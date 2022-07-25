@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -18,9 +19,20 @@ namespace Nop.Web.Framework.Mvc.Filters
         /// <summary>
         /// Create instance of the filter attribute
         /// </summary>
-        public HttpsRequirementAttribute() : base(typeof(HttpsRequirementFilter))
+        public HttpsRequirementAttribute(bool ignore = false) : base(typeof(HttpsRequirementFilter))
         {
+            IgnoreFilter = ignore;
+            Arguments = new object[] { ignore };
         }
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets a value indicating whether to ignore the execution of filter actions
+        /// </summary>
+        public bool IgnoreFilter { get; }
 
         #endregion
 
@@ -33,6 +45,7 @@ namespace Nop.Web.Framework.Mvc.Filters
         {
             #region Fields
 
+            private readonly bool _ignoreFilter;
             private readonly IStoreContext _storeContext;
             private readonly IWebHelper _webHelper;
 
@@ -40,8 +53,9 @@ namespace Nop.Web.Framework.Mvc.Filters
 
             #region Ctor
 
-            public HttpsRequirementFilter(IStoreContext storeContext, IWebHelper webHelper)
+            public HttpsRequirementFilter(bool ignoreFilter, IStoreContext storeContext, IWebHelper webHelper)
             {
+                _ignoreFilter = ignoreFilter;
                 _storeContext = storeContext;
                 _webHelper = webHelper;
             }
@@ -68,6 +82,17 @@ namespace Nop.Web.Framework.Mvc.Filters
                     return;
 
                 if (!DataSettingsManager.IsDatabaseInstalled())
+                    return;
+
+                //check whether this filter has been overridden for the action
+                var actionFilter = context.ActionDescriptor.FilterDescriptors
+                    .Where(filterDescriptor => filterDescriptor.Scope == FilterScope.Action)
+                    .Select(filterDescriptor => filterDescriptor.Filter)
+                    .OfType<HttpsRequirementAttribute>()
+                    .FirstOrDefault();
+
+                //ignore filter (the action is available even if a customer hasn't access to the admin area)
+                if (actionFilter?.IgnoreFilter ?? _ignoreFilter)
                     return;
 
                 var store = await _storeContext.GetCurrentStoreAsync();
