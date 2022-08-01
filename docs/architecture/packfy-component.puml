@@ -1,0 +1,57 @@
+@startuml Basic Sample
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
+!define DEVICONS2 https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons2
+!define GOVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/govicons
+'!define AWSICONS https://raw.githubusercontent.com/milo-minderbinder/AWS-PlantUML/master/dist/ApplicationServices/AmazonAPIGateway
+'!define awslib https://github.com/plantuml/plantuml-stdlib/tree/master/awslib
+!include DEVICONS2/microsoftsqlserver.puml
+!include DEVICONS/mysql.puml
+!include DEVICONS/react.puml
+!include DEVICONS/aws.puml
+!include DEVICONS2/dotnetcore.puml
+!include GOVICONS/lock.puml
+' !include AWSICONS/AmazonAPIGateway.puml
+
+'LAYOUT_WITH_LEGEND()
+'SHOW_PERSON_PORTRAIT()
+LAYOUT_LEFT_RIGHT()
+
+AddRelTag("async", $lineStyle = DashedLine())
+
+Person(seller, "Seller", "Packaging sellers")
+Person(client, "Client", "Packaging buyers")
+
+'System(api_gateway, "Amazon API Gateway", "Redirect URL",  $sprite="AmazonAPIGateway")
+System(api_gateway, "Amazon API Gateway", "Redirect URL")
+
+System_Boundary(packfy_system, "https://www.packfy.com.br"){
+
+  System_Boundary(packfy_system_mts, "https://www.packfy.com.br/mts"){    
+    System(packfy_mts, "Make To Stock (MTS)", "Connect packaging buyers with sellers", $sprite="dotnetcore")
+    ContainerDb(mssql_mts, "Database", "MSSQLExpress", "Stores MTS information",  $sprite="microsoftsqlserver")    
+  }
+
+  System_Boundary(packfy_system_mto, "https://www.packfy.com.br/mto"){    
+    System(packfy_mto, "Make To Order (MTO)", "Connect packaging buyers and small industries", $sprite="react")  
+    ContainerDb(mysql_mto, "Database", "MySQL", "Stores MTO information",  $sprite="mysql")  
+  }  
+  
+}
+
+System_Ext(soter, "Soter", "WestRock Authentication and Authorization Service", $sprite="lock")
+'System_Ext(soter, "Soter", "WestRock Authentication and Authorization Service")
+
+Rel(api_gateway, packfy_mts, "Redirect to")
+Rel(api_gateway, packfy_mto, "Redirect to")
+
+Rel(packfy_mts, mssql_mts, "Read/Write")
+Rel(packfy_mto, mysql_mto, "Read/Write")
+
+Rel(packfy_mts, soter, "SignIn or SignUp")
+Rel(packfy_mto, soter, "SignIn or SignUp")
+Rel(seller, api_gateway, "Access https://www.packfy.com.br", "Web or Mobile")
+Rel(client, api_gateway, "Access https://www.packfy.com.br", "Web or Mobile")
+
+
+@endumlb

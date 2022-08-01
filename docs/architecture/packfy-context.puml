@@ -1,0 +1,26 @@
+@startuml Basic Sample
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+'!define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
+'!include DEVICONS/msql_server.puml
+
+'LAYOUT_WITH_LEGEND()
+'SHOW_PERSON_PORTRAIT()
+LAYOUT_LEFT_RIGHT()
+
+AddRelTag("async", $lineStyle = DashedLine())
+
+Person(seller, "Seller", "Packaging sellers")
+Person(client, "Client", "Packaging buyers")
+
+'System(packfy, "www.packfy.com.br", "Connect packaging buyers and small industries",  $sprite="msql_server")
+System(packfy, "www.packfy.com.br", "Connect packaging buyers and small industries")
+System_Ext(zoop, "Zoop", "Fintech as a Service")
+
+Rel(seller, packfy, "Advertise your packages", "HTTPS")
+Rel(client, packfy, "Buy packages or create custom projects", "HTTPS")
+
+Rel(packfy, zoop, "Send payment to", "HTTPS/JSON")
+Rel(zoop, seller, "Transfer payment", "HTTPS/JSON", $tags="async")
+
+
+@enduml
